@@ -60,3 +60,160 @@ process.exec(`${path.resolve(__dirname, '..')}/node_modules/.bin/vue-devtools`,
 
 ## 2 vuex基础知识
 
+### 2.1 什么是vuex
+先看个例子：
+```javascript
+const store = new Vuex.Store({
+    state: {
+        name: 'thb',
+        age: 18,
+        profession: 'Move Bricks',
+    },
+    getters: {
+        personInfo(state) {
+            return `My name is ${state.name}, I am ${state.age}`;
+        }
+    }
+    mutations: {
+        SET_AGE(state, age) {
+            state.age = age;
+        }
+    },
+    actions: {
+        nameAsyn({commit}) {
+            setTimeout(() => {
+                commit('SET_AGE', 18);
+            }, 1000);
+        }
+    },
+    modules: {
+        a: modulesA
+    }
+}
+```
+简单来说就是一个闭包，闭包里面的有一个state对象，它保存了我们许许多多的全局变量，但是我们不能直接修改它，只能通过闭包对外开出来的mutations去修改这些state，其中还开放了例如把state打扮一番再返回的getters，要绕一圈（异步）才能让mutations修改state的actions，还有包含所有内容的子孙后代modules。
+
+
+### 2.2 为什么要使用vuex
+在vue的组件化开发中，经常会遇到需要将当前组件的状态传递给其他组件。父子组件通信时，我们通常会采用 props + emit 这种方式。但当通信双方不是父子组件甚至压根不存在相关联系，或者一个状态需要共享给多个组件时，就会非常麻烦，数据也会相当难维护，这对我们开发来讲就很不友好，vuex 这个时候就很实用。
+
+## 3 如何定义vuex
+
+### 3.1 代码中的目录结构
+├── build                                       // webpack配置文件
+├── config                                      // 项目打包路径
+├── src                                         // 源码目录
+│   ├── components                              // 组件
+│   ├── store                                   // vuex的状态管理
+│   │   ├── modules                             // modules目录
+│   │       ├── person-center                   // modules子目录
+│   │           ├── person-center               // 配置module
+│   │   ├── actions-types.js                    // 定义常量actions名
+│   │   ├── action.js                           // 配置actions
+│   │   ├── index.js                            // 引用vuex，创建store
+│   │   ├── mutation-types.js                   // 定义常量muations名
+│   │   └── mutations.js                        // 配置mutations
+├── index.html                                  // 入口html文件
+
+### 3.2 index.js
+
+```javascript
+import Vue from 'vue';
+import Vuex from 'vuex';
+import actions from './actions'; // 引入actions
+import mutations from './mutations'; // 引入mutations
+// 引入personCenter子模块
+import personCenter from './modules/person-center/person-center'; 
+
+Vue.use(Vuex);
+
+// 定义state的属性
+const state = {
+  appInfo: {},
+  loginInfo: {},
+};
+
+export default new Vuex.Store({
+  state,
+  actions,
+  mutations,
+  modules: {
+    personCenter,
+  },
+});
+
+```
+
+### 3.3 mutations-types.js
+``` javascript
+export const SET_APPINFO = 'SET_APPINFO';
+export const SET_LOGININFO = 'SET_LOGININFO';
+export const UPDATE_LOGININFO = 'UPDATE_LOGININFO';
+```
+
+### 3.4 mutations.js
+``` javascript
+// 只能进行同步操作
+import { SET_APPINFO, SET_LOGININFO, UPDATE_LOGININFO } from './mutations-types';
+
+export default {
+  [SET_APPINFO](state, appInfo) {
+    state.appInfo = {
+      appId: appInfo.appId,
+      mac: appInfo.appMac,
+      version: appInfo.appVer,
+      locationCode: appInfo.locationCode,
+    };
+  },
+  [SET_LOGININFO](state, loginInfo) {
+    state.loginInfo = loginInfo;
+  },
+  [UPDATE_LOGININFO](state, updateInfo) {
+    const keys = Object.keys(updateInfo);
+    keys.forEach(key => {
+      state.loginInfo[key] = updateInfo[key];
+    });
+  },
+};
+```
+
+### 3.5 actions-types
+```javascript
+export const UPDATE_LOGININFO_ASYNC = 'UPDATE_LOGININFO_ASYNC';
+```
+
+### 3.6 actions
+```javascript
+// 专门处理异步操作
+import { UPDATE_LOGININFO } from './mutations-types';
+import { UPDATE_LOGININFO_ASYNC } from './actions-types';
+
+export default {
+  [UPDATE_LOGININFO_ASYNC]({ commit }, data) {
+    setTimeout(() => {
+      commit(UPDATE_LOGININFO, data);
+    }, 1000);
+  },
+};
+
+```
+
+### 3.7 modules
+```javascript
+const SET_PORTRAIT = 'SET_PORTRAIT';
+
+export default {
+  namespaced: true,
+  state: {
+    portrait: '', // 头像
+  },
+  mutations: {
+    [SET_PORTRAIT](state, v) {
+      state.portrait = v;
+    },
+  },
+};
+
+```
+
+## 4 如何使用vuex
