@@ -81,4 +81,4 @@ deploy:
   type: git
   repo: git@github.com:loveJiong/loveJiong.github.io.git
   branch: master
-  message: 图片显示问题
+  message: 完善vuex使用分享

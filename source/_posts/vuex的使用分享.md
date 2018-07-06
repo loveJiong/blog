@@ -97,7 +97,7 @@ const store = new Vuex.Store({
 ### 2.2 为什么要使用vuex
 在vue的组件化开发中，经常会遇到需要将当前组件的状态传递给其他组件。父子组件通信时，我们通常会采用 props + emit 这种方式。但当通信双方不是父子组件甚至压根不存在相关联系，或者一个状态需要共享给多个组件时，就会非常麻烦，数据也会相当难维护，这对我们开发来讲就很不友好，vuex 这个时候就很实用。
 
-## 3 如何定义vuex
+## 3 如何构造vuex
 
 ### 3.1 代码中的目录结构
 ├── build                                       // webpack配置文件
@@ -108,11 +108,12 @@ const store = new Vuex.Store({
 │   │   ├── modules                             // modules目录
 │   │       ├── person-center                   // modules子目录
 │   │           ├── person-center               // 配置module
-│   │   ├── actions-types.js                    // 定义常量actions名
+│   │   ├── actions-types.js                    // 定义常量actions名，想要就要不强制
 │   │   ├── action.js                           // 配置actions
 │   │   ├── index.js                            // 引用vuex，创建store
-│   │   ├── mutation-types.js                   // 定义常量muations名
+│   │   ├── mutation-types.js                   // 定义常量muations名，想要就要不强制
 │   │   └── mutations.js                        // 配置mutations
+│   │   └── getters.js                          // 配置getters
 ├── index.html                                  // 入口html文件
 
 ### 3.2 index.js
@@ -121,6 +122,7 @@ const store = new Vuex.Store({
 import Vue from 'vue';
 import Vuex from 'vuex';
 import actions from './actions'; // 引入actions
+import getters from './getters'; // 引入getters
 import mutations from './mutations'; // 引入mutations
 // 引入personCenter子模块
 import personCenter from './modules/person-center/person-center'; 
@@ -136,6 +138,7 @@ const state = {
 export default new Vuex.Store({
   state,
   actions,
+  getters,
   mutations,
   modules: {
     personCenter,
@@ -198,7 +201,14 @@ export default {
 
 ```
 
-### 3.7 modules
+### 3.7 getters
+```javascript
+export default {
+  myName: state => `我的名字叫做${state.logInfo.fullName}`,
+}
+```
+
+### 3.8 modules
 ```javascript
 const SET_PORTRAIT = 'SET_PORTRAIT';
 
@@ -217,3 +227,67 @@ export default {
 ```
 
 ## 4 如何使用vuex
+
+构造好了，接下来就是如何在代码中使用这些属性了，我会将不同场景来进行示例。
+
+### 4.1 只需要使用到少量的vuex
+
+```javascript
+export default {
+  computed: {
+    stateDemo() {
+      return this.$store.state.loginInfo;
+    },
+    gettersDemo() {
+      return this.$store.getters.myName;
+    },
+    modulesStateDemo() {
+      return this.$store.state.personCenter.portrait;
+    }
+  },
+  methods: {
+    mutationsDemo(loginInfo) {
+      this.$store.commit('SET_LOGININFO', loginInfo);
+    },
+    actionsDemo(loginInfo) {
+      this.$store.dispatch('UPDATE_LOGININFO_ASYNC', loginInfo)
+    },
+    modulesMutationsDemo(portrait) {
+      this.$store.commit('personCenter/SET_PORTRAIT', portrait);
+    }
+  }
+}
+
+```
+
+### 4.2 使用到大量的vuex
+当大量的使用到vuex的state,getters,mutations,actions的时候，将这些状态都声明为计算属性或复写store.commit,store.dispatch会有些重复和冗余。
+我们可以使用对应的mapState,mapGetters,mapMutations,mapActions辅助函数来简化调用方法。
+```javascript
+// 记得引入对应的辅助函数
+import { mapState, mapGetters, mapMutations, mapActions } from 'vuex'
+export default {
+  computed: {
+    ...mapState(['loginInfo']),
+    ...mapGetters(['myName']),
+    // 对于modules你可以将模块的空间名称字符串作为第一个参数传递给辅助函数，这样所有绑定都会自动将该模块作为上下文
+    ...mapState('personCenter', ['portrait']),
+  },
+  mounted () {
+    console.log(this.appInfo);
+    console.log(this.myName);
+    console.log(this.portrait);
+    this.SET_LOGININFO('x');
+    this.UPDATE_LOGININFO_ASYNC('xx');
+    this.SET_PORTRAIT('xxx');
+  },
+  methods: {
+    ...mapMutations(['SET_LOGININFO']),
+    ...mapActions(['UPDATE_LOGININFO_ASYNC']),
+    ...mapMutations('personCenter', ['SET_PORTRAIT']),
+  }
+}
+```
+
+## 5 总结
+如果你看懂了以上的教程，那么vuex的基础使用定是没有什么问题了，其实vuex很简单，知道怎么构造怎么使用基本上就可以投入开发了。但是对于复杂的场景，还是需要将modules的概念搞搞清楚，这里可以参考[官方文档](https://vuex.vuejs.org/zh/guide/modules.html)。
