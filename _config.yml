@@ -81,4 +81,4 @@ deploy:
   type: git
   repo: git@github.com:loveJiong/loveJiong.github.io.git
   branch: master
-  message: 完善vuex使用分享
+  message: Nuxt使用介绍
