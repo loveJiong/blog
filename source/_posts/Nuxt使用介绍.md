@@ -240,7 +240,7 @@ module.exports = {
 
 本地打包
 ```bash
-npm run buil
+npm run build
 ```
 
 将打包后的下列文件夹上传到服务器空间里
